@@ -1,10 +1,16 @@
 # vaha-m5-hack
 
-Welcome to my repository where I document the reverse-engineering that I have done of the VAHA M5 mirror. Throught this page, you will find my teardown of the device, and the guide to transform it into a giant Android tablet.
+Welcome to my repository where I document the reverse-engineering that I have done of the VAHA M5 mirror. Through this page, you will find my teardown of the device, and the guide to transform it into a giant Android tablet.
+
+No copyright is infringed since we do not even try to reverse-engineer any of the software found in the device. Actually, the Single Board Computer from the device is fully discarded. This is also in line with the proposals from the European Commission on "Right to Repair". The goal of the project is to extend the lifetime of those devices by opening them up.
+
+**Disclaimer**: By opening a VAHA mirror, you will void its warranty. Also, this experiment has been accomplished without VAHA's support. I own a VAHA mirror. Since it only allows me to run their app in addition to Firefox, Spotify, and Zoom, and I see much more potential as a general Android tablet, I decided to convert it.
 
 ## Internals
 
-Here is a split up of the internals of the mirror:
+Accessing the internals is easy. The backplate of the M5 is only held by screws, no glue. Once open, everything is easily serviceable. You can tell that this is a low-volume device. They mostly combined generic off-the-shelves parts, instead of creating an integrated custom-made electronic board. This will make our job much easier, because we can just swap the pieces that we need.
+
+Here is a description of the internals of the mirror:
 
 ### Camera
 
@@ -16,9 +22,9 @@ Recognized as [0bda:3035](https://linux-hardware.org/?id=usb:0bda-3035) "Realtek
 
 Interface: USB, while this is a USB signal, it is connected to the Single Board Computer using a JST connector. I could remove that connector, and replace it with a standard USB-A 2.0 connector.
 
-Recognized as 01c5:2710 "BATSound MicArray LHSJ103" by Linux.
+Recognized as 01c5:2710 "BATSound MicArray LHSJ103" by Linux. Surprisingly, this vendor ID 01c5 does not seem to be officially registered, and I cannot find much information about a "BATSound MicArray" device online, or anything with reference "LHSJ103". Even the main chip has some black tape glued on it. I suspect that it might cover an EPROM which would get erased if exposed to UV light, so do not try remove the tape. This might be some niche device that is never offered to end-user as such. Nevertheless, it is supported as a standard USB Audio interface.
 
-It includes the microphone array which is visible as 4 black dots at the top of the mirror, and the amplifier for the four speakers.
+This device includes the microphone array which is visible as 4 black dots at the top of the mirror, and the amplifier for the four speakers.
 
 The whole audio system is made of three boards:
 
@@ -97,23 +103,26 @@ The goal of this project is to turn the VAHA M5 mirror into a giant Android tabl
 
 This in done in several steps:
 
-* Remove the existing SBC.
-* Use the "2AV-1VGA-1HDMI-TTL-50PIN-LVDS-ACC" board from AliExpress to generate the LVDS signal from an HDMI signal.
-* Put a new "open" SBC running Android.
+1. Remove the existing SBC.
+2. Use the "2AV-1VGA-1HDMI-TTL-50PIN-LVDS-ACC" board found on AliExpress, to generate the LVDS signal from an HDMI signal. Many ARM processors have an LVDS interface, but most hobbyist SBCs do not expose it.
+3. Put a new "open" SBC running Android.
+4. Add a USB 3.0 Hub inside the mirror to get extra ports.
 
 ### The LVDS Driver
 
-The "2AV-1VGA-1HDMI-TTL-50PIN-LVDS-ACC" board is the only one that I could find that is pin-for-pin compatible with the original LVDS cable provided in the mirror. From my research, each LCD panel vendor tend to have their own connector on the LCD controller board. It is therefor interesting to reuse the existing cable which has the correct pin-out on the LCD controller side.
+The "2AV-1VGA-1HDMI-TTL-50PIN-LVDS-ACC" board is the only one that I could find that is pin-for-pin compatible with the original LVDS cable provided in the mirror. From my research, each LCD panel vendor tend to have their own connector on the LCD controller board. It is therefor easier to reuse the existing cable which has the correct pin-out on the LCD controller side. With that many wires, you do not want to create your own cable :-)
 
-To select the 1920x1080-D8 mode on the HDMI-LVDS board, you need to put jumper-caps on positions A, 1, and 7. Those jumper-caps have a 2mm pitch instead of the usual 2.54mm.
+Some AliExpress shops are lazy and do not explain how to configure the board, and do not always give enough jumper-caps. To select the 1920x1080-D8 mode on the HDMI-LVDS board, you need to put jumper-caps on positions A, 1, and 7. Those jumper-caps have a 2mm pitch instead of the usual 2.54mm. Some also recommend to glue a small heatsink on the main chip when doing 1920x1080. Since AliExpress shops do not always do a great job at doing strong solder joints, and repeated heat cycles is the enemy of those joints, I put a heatsink.
 
-Thanks to this LVDS driver, we can now use any SBC that outputs an HDMI signal. You might also just opt for an SBC which can send an LVDS signal instead of buying this converter, but those SBCs are not so easy to come by for hobbyists.
+Thanks to this HDMI-LVDS converter, we can now use any SBC that outputs an HDMI signal. You might also just opt for an SBC which can send an LVDS signal instead of buying this converter, but those SBCs are not so easy to come by for hobbyists.
 
 ### The new SBC
 
 We can be very flexible in terms of SBC since we now simply need USB, HDMI, and some GPIOs. It would also be easier if it can be fed with 12V like the original one.
 
-For this project, I opted for the Khadas VIM4, since it can be easily setup using Android through their OOWOW setup tool. In addition, they offer detailed diagrams with the wiring of the board.
+For this project, I opted for the Khadas VIM4, since it is easy to install Android through their OOWOW setup tool. In addition, they offer detailed diagrams with the wiring of the board.
+
+If you first power on your VIM4 though the USB-C port to configure it, and it randomly turns off, it might not be getting enough power from the adaptor. Since I didn't purchase their USB adaptor, I relied on the VIN power connector instead.
 
 In a nutshell:
 
@@ -121,3 +130,9 @@ In a nutshell:
 * The USB-C connector will be made available on the backplate of the mirror.
 * The camera will be connected to the internal USB 2 headers (next to GPIOs), while the VIM4's USB 3 port will be connected to a new hub connecting touchscreen, audio, and an external USB 3 connector. That way, the internal USB 2 hub of the VIM4 is used only for the camera and cannot be saturated by another device.
 * The PWD_HOLD_EXT pin on the header is not the same as the pads on the backside for an external button. We need the pad on the backside to be connected to the yellow wire coming from the power button. When the button is pressed, the wire will be set to ground level, and a "Power" signal will be processed by the SBC.
+
+### Android Setup
+
+An advantage of using Khadas' Android distribution, is that it comes with the Google Play Store out of the box. There is no need to use Open GApps, NikGapps, or the likes.
+
+We may need to register our custom device with Google to allow it to interact with official Google Apps and your Google Account. Go to https://www.google.com/android/uncertified/ Note that the "Google Services Framework Android ID" will change each time that you reinstall Android on your device, and you can register at most 100 IDs with your Google Account.
