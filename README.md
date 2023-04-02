@@ -32,7 +32,7 @@ The whole audio system is made of three boards:
 2. One is the amplifier found at the bottom.
 3. The last is the power supply for the amplifier, also found at the bottom. It is feeding 15.5V DC to the amplifier continuously, regardless if the mirror is turned on or off via the front power button.
 
-The amplifier is controlled by one yellow wire going to the SBC. I measured 3V DC going through that wire to turn on the amplifier. _It is not clear if this is an on/off signal, or an analog one to control the amplification level._
+The amplifier is controlled by one red wire going to the SBC. I measured 3V DC going through that wire to turn on the amplifier. _It is not clear if this is an on/off signal, or an analog one to control the amplification level._
 
 ### Touch panel
 
